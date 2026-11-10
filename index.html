@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LUMEN Residence — scroll tour of your apartment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#f4efe6;--mut:rgba(244,239,230,.82);--mut2:rgba(244,239,230,.6);--line:rgba(244,239,230,.2);--acc:#d9b77f;--free:#8fd3ab;--res:#ecbf66;--sold:#8a8d94}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#07080b}
+body{color:var(--ink);font-family:Montserrat,system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#07080b}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.serif{font-family:Montserrat,system-ui,sans-serif;font-weight:300;letter-spacing:-.02em}
+.eyebrow{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--acc);font-weight:600}
+.glass{background:rgba(10,11,14,.82);backdrop-filter:blur(20px) saturate(1.3);-webkit-backdrop-filter:blur(20px) saturate(1.3);border:1px solid var(--line);border-radius:22px}
+
+#track{position:relative;pointer-events:none}
+#stage{position:fixed;inset:0;overflow:hidden;background:#111317}
+.layer{position:absolute;left:0;top:0;width:1536px;height:864px;transform-origin:0 0;will-change:transform,opacity;opacity:0;pointer-events:none}
+.layer img{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}
+.layer.live{pointer-events:auto}
+.bd{position:absolute;inset:-60px;background-size:cover;background-position:center;filter:blur(22px) brightness(.5) saturate(1.1);opacity:0;pointer-events:none}
+#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% 45%,rgba(0,0,0,0) 55%,rgba(0,0,0,.45) 100%),linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,0) 18%,rgba(0,0,0,0) 70%,rgba(0,0,0,.5))}
+#endShade{position:absolute;inset:0;background:rgba(6,7,10,.55);opacity:0;pointer-events:none}
+
+/* hero floors */
+.fl{fill:var(--acc);fill-opacity:0;stroke:#ffe1ac;stroke-opacity:0;stroke-width:2;cursor:pointer;transition:fill-opacity .3s,stroke-opacity .3s}
+.fl:hover{fill-opacity:.22;stroke-opacity:.7}
+.showsel .fl.sel{fill-opacity:.2;stroke-opacity:1;stroke-width:2.5}
+.fl.dis{cursor:not-allowed}
+.ftag{position:absolute;left:1062px;transform-origin:0 50%;transform:translateY(-50%) scale(var(--inv,1));white-space:nowrap;display:flex;align-items:center;gap:10px;pointer-events:none;transition:opacity .35s}
+.ftag b{font-family:Montserrat;font-weight:400;font-size:30px;line-height:1}
+.ftag span{font-size:12px;color:var(--mut)}
+.ftag i{width:36px;height:1px;background:var(--acc)}
+
+/* plan */
+.apt{position:absolute;border-radius:10px;cursor:pointer;transition:background .3s,box-shadow .3s,opacity .3s}
+.apt.free{background:rgba(143,211,171,.10);box-shadow:inset 0 0 0 3px rgba(143,211,171,.55)}
+.apt.res{background:rgba(236,191,102,.10);box-shadow:inset 0 0 0 3px rgba(236,191,102,.55)}
+.apt.sold{background:rgba(10,11,14,.55);box-shadow:inset 0 0 0 3px rgba(138,141,148,.5);cursor:not-allowed}
+.apt.free:hover,.apt.res:hover{background:rgba(255,255,255,.12)}
+.apt.sel{background:rgba(217,183,127,.16)!important;box-shadow:inset 0 0 0 5px var(--acc),0 0 60px rgba(217,183,127,.35)!important}
+.apt.dim{opacity:.45}
+.apt .lab{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(var(--inv,1));text-align:center;pointer-events:none;padding:10px 16px;border-radius:14px;background:rgba(10,11,14,.72);backdrop-filter:blur(6px);white-space:nowrap}
+.rot .apt .lab{display:block!important;transform:translate(-50%,-50%) rotate(-90deg) scale(var(--inv,1))}
+.apt .lab b{display:block;font-family:Montserrat;font-weight:400;font-size:28px;line-height:1}
+.apt .lab span{font-size:11.5px;color:var(--mut)}
+.apt .lab em{font-style:normal;font-weight:700;font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+
+/* hotspots */
+.hot{position:absolute;width:0;height:0}
+.hot .dot{position:absolute;left:0;top:0;transform:translate(-50%,-50%) scale(var(--inv,1));width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.92);color:#16120c;display:grid;place-items:center;font-size:20px;font-weight:500;box-shadow:0 0 0 7px rgba(255,255,255,.22),0 6px 20px rgba(0,0,0,.35);transition:background .25s}
+.hot .dot::after{content:'';position:absolute;inset:-7px;border-radius:50%;border:1.5px solid rgba(255,255,255,.7);animation:ring 2.4s infinite}
+@keyframes ring{0%{transform:scale(.85);opacity:1}100%{transform:scale(1.7);opacity:0}}
+.hot .tip{position:absolute;left:0;top:0;transform-origin:0 0;transform:scale(var(--inv,1)) translate(30px,-50%);width:300px;padding:18px 20px;border-radius:18px;background:rgba(10,11,14,.86);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--line);box-shadow:0 18px 50px rgba(0,0,0,.45);font-size:13.5px;line-height:1.55;color:var(--mut);z-index:5;opacity:0;pointer-events:none;transition:opacity .25s}
+.hot.left .tip{transform:scale(var(--inv,1)) translate(calc(-100% - 30px),-50%)}
+.hot .tip b{display:block;color:var(--ink);font-size:17px;font-weight:500;margin-bottom:6px}
+.hot:hover{z-index:5}
+.hot .dot{cursor:pointer}
+.hot:hover .tip,.hot.open .tip{opacity:1}
+.hot:hover .dot,.hot.open .dot{background:var(--acc)}
+
+/* HUD */
+header{position:fixed;left:0;right:0;top:0;height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 34px;z-index:20;pointer-events:none}
+header>*{pointer-events:auto}
+.logo{font-family:Montserrat;font-size:30px;line-height:1}
+.logo small{font-family:Montserrat;font-size:10px;letter-spacing:.34em;text-transform:uppercase;color:var(--mut);margin-left:8px;vertical-align:5px}
+.hbtn{padding:12px 20px;border-radius:99px;background:var(--ink);color:#111;font-weight:700;font-size:13px;transition:.25s}
+.hbtn:hover{background:var(--acc)}
+.hbtn .s{display:none}
+.cta .mp{display:none;font-weight:600;opacity:.75}
+@media (max-width:900px) and (orientation:portrait){.cta .mp{display:inline}}
+#steps{position:fixed;right:30px;top:50%;transform:translateY(-50%);z-index:20;display:flex;flex-direction:column;gap:2px}
+#steps button{text-shadow:0 1px 8px rgba(0,0,0,.9);display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:7px 0;font-size:12px;color:var(--mut2);font-weight:600;transition:color .3s}
+#steps button i{width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;transition:.3s}
+#steps button span{opacity:0;transform:translateX(6px);transition:.3s}
+#steps:hover button span,#steps button.on span{opacity:1;transform:none}
+#steps button.on{color:var(--ink)}
+#steps button.on i{background:var(--acc);border-color:var(--acc);transform:scale(1.3)}
+#steps button.done{color:var(--mut)}
+#steps button:hover{color:var(--ink)}
+#bar{position:fixed;left:0;top:0;height:2px;background:var(--acc);z-index:21;width:0}
+
+.ui{position:fixed;z-index:15;opacity:0;pointer-events:none;will-change:opacity,transform}
+.ui.live{pointer-events:auto}
+#uHero{left:34px;bottom:64px;max-width:640px}
+#uHero h1{font-size:clamp(56px,8vw,118px);line-height:.92;letter-spacing:-.01em}
+#uHero p{margin-top:18px;font-size:16px;line-height:1.6;color:var(--mut);max-width:440px}
+#scrollHint{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:15;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--mut)}
+#scrollHint i{width:1px;height:44px;background:linear-gradient(var(--ink),transparent);animation:drip 1.8s infinite}
+@keyframes drip{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+#uFloor{left:34px;top:50%;transform:translateY(-50%);width:330px;padding:26px 24px}
+#uFloor h2{font-size:46px;line-height:1;margin:10px 0 6px}
+#uFloor .sub{font-size:13px;color:var(--mut);margin-bottom:18px}
+.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.fgrid button{height:48px;border-radius:12px;border:1px solid var(--line);font-family:Montserrat;font-size:22px;position:relative;transition:.2s}
+.fgrid button:hover{background:rgba(255,255,255,.08)}
+.fgrid button.on{background:var(--ink);color:#111;border-color:var(--ink)}
+.fgrid button[disabled]{opacity:.3;cursor:not-allowed}
+.fgrid button em{position:absolute;right:5px;top:4px;font-style:normal;font-family:Montserrat;font-size:9px;font-weight:700;color:var(--free)}
+.fgrid button.on em{color:#2b6b45}
+.note{font-size:12px;color:var(--mut2);margin-top:16px;line-height:1.5;display:flex;gap:8px;align-items:center}
+.note svg{flex:none}
+
+#uPlan{right:84px;top:50%;width:380px;max-height:calc(100vh - 120px);padding:24px;overflow:auto}
+#uPlan h2{font-size:32px;line-height:1.1;margin:8px 0 14px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--mut);margin-bottom:12px}
+.legend span{display:flex;gap:6px;align-items:center}.legend i{width:9px;height:9px;border-radius:3px}
+.alist{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.arow{display:grid;grid-template-columns:58px 1fr auto;gap:8px;align-items:center;padding:11px 4px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;transition:.2s}
+.arow:hover{background:rgba(255,255,255,.05)}
+.arow.on{background:rgba(217,183,127,.14)}
+.arow b{font-family:Montserrat;font-weight:400;font-size:22px}
+.arow .m{color:var(--mut);font-size:12px}
+.arow .pr{text-align:right;font-weight:600}.arow .pr small{display:block;font-size:11px;font-weight:600}
+.arow[disabled]{opacity:.45;cursor:not-allowed}
+.st-free{color:var(--free)}.st-res{color:var(--res)}.st-sold{color:var(--sold)}
+.sel-box{margin-top:16px;padding:16px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.sel-box .row{display:flex;justify-content:space-between;align-items:baseline}
+.sel-box .price{font-family:Montserrat;font-size:30px}
+.sel-box .m{font-size:12px;color:var(--mut);margin-top:4px}
+.cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px;border-radius:14px;background:var(--acc);color:#17120a;font-weight:700;font-size:14px;margin-top:14px;transition:.25s}
+.cta:hover{background:#ebcd9a;transform:translateY(-1px)}
+
+.cap{left:34px;bottom:44px;max-width:520px;padding:26px 28px}
+.cap .idx{display:flex;gap:12px;align-items:center}
+.cap .idx i{flex:1;height:1px;background:var(--line);max-width:80px}
+.cap h3{text-wrap:balance;font-size:54px;line-height:1;margin:12px 0 10px}
+.cap .spec{display:flex;gap:18px;font-size:13px;color:var(--ink);font-weight:600;margin-bottom:10px;flex-wrap:wrap}
+.cap .spec span{color:var(--mut);font-weight:500}
+.cap p{font-size:14px;line-height:1.6;color:var(--mut)}
+#uFacade{left:50%;bottom:auto;top:50%;transform:translate(-50%,-50%);text-align:center;width:min(900px,92vw);max-width:none;background:none;border:0;backdrop-filter:none;-webkit-backdrop-filter:none}
+#uFacade h3{text-wrap:balance;font-size:clamp(40px,5vw,72px);text-shadow:0 4px 40px rgba(0,0,0,.6)}
+#uFacade p{color:var(--ink);text-shadow:0 2px 20px rgba(0,0,0,.8);font-size:15px}
+
+#uEnd{left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,92vw);padding:34px;text-align:center}
+#uEnd h2{font-size:clamp(44px,5vw,64px);line-height:1;margin:12px 0}
+#uEnd .specs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:22px 0}
+#uEnd .specs div{border:1px solid var(--line);border-radius:14px;padding:12px 6px}
+#uEnd .specs b{display:block;font-family:Montserrat;font-weight:400;font-size:26px;line-height:1}
+#uEnd .specs span{font-size:11px;color:var(--mut)}
+#uEnd .row2{display:flex;gap:8px;margin-top:10px}
+#uEnd .ghost{flex:1;padding:14px;border-radius:14px;border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--mut);transition:.2s}
+#uEnd .ghost:hover{color:var(--ink);background:rgba(255,255,255,.06)}
+
+#modal{position:fixed;inset:0;z-index:50;display:none;place-items:center;background:rgba(5,6,8,.6);backdrop-filter:blur(8px)}
+#modal.on{display:grid}
+#modal .box{width:min(420px,92vw);padding:30px;position:relative}
+#modal h3{font-size:36px;line-height:1.05;margin:10px 0 8px}
+#modal p{color:var(--mut);font-size:13px;margin-bottom:18px;line-height:1.55}
+#modal input{width:100%;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink);font:inherit;font-size:14px;margin-bottom:10px;outline:none}
+#modal input:focus{border-color:var(--acc)}
+#modal .x{position:absolute;right:18px;top:14px;font-size:24px;color:var(--mut)}
+
+#loader{position:fixed;inset:0;z-index:99;background:#07080b;display:grid;place-items:center;transition:opacity .9s}
+#loader .w{text-align:center}
+#loader .serif{font-size:48px}
+#loader .pb{width:180px;height:1px;background:var(--line);margin:18px auto 0;position:relative;overflow:hidden}
+#loader .pb i{position:absolute;inset:0;background:var(--acc);transform-origin:0 0;transform:scaleX(0);transition:transform .3s}
+
+#mtip{position:fixed;left:12px;right:12px;top:70px;z-index:30;padding:14px 16px;font-size:13px;line-height:1.5;color:var(--mut);opacity:0;transform:translateY(-8px);transition:.3s;pointer-events:none}
+#mtip.on{opacity:1;transform:none}
+#mtip b{display:block;color:var(--ink);font-size:14px;margin-bottom:2px}
+@media (max-width:900px){
+ header{height:60px;padding:0 14px;padding-top:env(safe-area-inset-top)}
+ .logo{font-size:24px}.logo small{display:none}
+ .hbtn{padding:9px 14px;font-size:12px}.hbtn .l{display:none}.hbtn .s{display:inline}
+ #steps{display:none}
+ #uHero{left:18px;right:18px;top:78px;bottom:auto}
+ #uHero h1{font-size:clamp(40px,12vw,54px)}
+ #uHero p{font-size:13.5px;margin-top:10px}
+ #scrollHint{bottom:14px}
+ #uFloor{left:10px;right:10px;top:auto;bottom:10px;transform:none;width:auto;padding:16px 16px 14px}
+ #uFloor h2{font-size:30px;margin:6px 0 2px}
+ #uFloor .sub{margin-bottom:12px}
+ .fgrid{grid-template-columns:repeat(7,1fr);gap:5px}.fgrid button{height:42px;font-size:18px;border-radius:10px}
+ .note{display:none}
+ #uPlan{left:10px;right:10px;top:auto;bottom:10px;width:auto;max-height:none;padding:16px;overflow:visible}
+ #uPlan h2{font-size:26px;margin:4px 0 10px}
+ .legend{display:none}
+ .alist{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;border:0}
+ .arow{display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 2px;border:1px solid var(--line);border-radius:12px}
+ .arow .m{display:none}
+ .arow b{font-size:20px;line-height:1}
+ .arow .pr{text-align:center;font-size:0}
+ .arow .pr small{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase}
+ .arow.on{border-color:var(--acc)}
+ .sel-box{margin-top:10px;padding:12px 14px}
+ .sel-box .price{font-size:24px}
+ .sel-box .m{font-size:11.5px}
+ .cta{padding:14px;margin-top:10px}
+ .cap{left:10px;right:10px;bottom:10px;max-width:none;padding:14px 16px 16px;border-radius:18px}
+ .cap h3{text-wrap:balance;font-size:30px;margin:8px 0 6px}
+ .cap .spec{font-size:12px;gap:10px;margin-bottom:6px}
+ .cap p{font-size:12.5px;line-height:1.5}
+ #uFacade{width:88vw}
+ #uFacade h3{font-size:40px}
+ .hot .tip{display:none}
+ .hot .dot{width:30px;height:30px;font-size:18px}
+ #uEnd{padding:22px 18px}
+ #uEnd h2{font-size:36px}
+ #uEnd .specs{grid-template-columns:repeat(4,1fr);gap:6px;margin:16px 0}
+ #uEnd .specs b{font-size:20px}
+ #uEnd .row2{flex-direction:column}
+}
+@media (max-width:900px) and (orientation:portrait){
+ #L_facade img,#L_living img,#L_kitchen img,#L_bedroom img,#L_bath img{-webkit-mask-image:linear-gradient(transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(transparent,#000 6%,#000 94%,transparent)}
+ #uPlan{padding:14px 14px 14px}
+ #uPlan .eyebrow{display:none}
+ #uPlan h2{font-size:22px;margin:0 0 10px}
+ .sel-box{margin-top:10px;padding:0;border:0;background:none}
+ .sel-box .row,.sel-box .m{display:none}
+ .sel-box .price{display:none}
+ .sel-box .cta{margin-top:0}
+}
+@media (max-width:900px) and (orientation:landscape){
+ #uHero{top:auto;bottom:20px}
+ #uHero h1{font-size:40px}#uHero p{display:none}
+ #uFloor{left:auto;right:10px;bottom:10px;width:330px}
+ .fgrid{grid-template-columns:repeat(4,1fr)}
+ #uPlan{left:auto;right:10px;top:66px;bottom:10px;width:320px;overflow:auto}
+ .cap{right:auto;width:360px}.cap p{display:none}
+}
+</style>
+</head>
+<body>
+<div id="loader"><div class="w"><div class="serif">LUMEN</div><div class="pb"><i id="lp"></i></div></div></div>
+
+<div id="stage">
+ <!-- HERO -->
+ <div id="bds"><div class="bd" id="B_facade" style="background-image:url(data:image/webp;base64,UklGRhoBAABXRUJQVlA4IA4BAAAQBwCdASogABIAPp08mUgloyIhMAgAsBOJZgCxHoSA+tYxW6CAQwSAEqB7z0HA0ty2octYWLHL2XU7bxy5TbTYAgD+rVKCRMPbP3P3Wzk6K5q/bNSTjz6bx7NGp+a0f9B90CCJeksj45KRg97LYzducV0bkb61YfmE8/gNnMX4UfJ92FTjAOhy8l8L8oVBpQkYyO+DllkXUwyOdOS8qsIDDErNp0gS5aGTZFGGM4F7tH8XMw6OccWalK981HAM25bymriGOzICyRYG5YLIl5ODGWPR0a2Qfsna5+3PUFQ0nbEUp9LprgbUWajnk+Y4Fy5v/SJRwZJfUKy66cFKfeY+rCa00bHX09MZKb9AAAA=)"></div><div class="bd" id="B_living" style="background-image:url(data:image/webp;base64,UklGRuQAAABXRUJQVlA4INgAAADQBQCdASogABIAPp1Amkglo6KhMAgAsBOJYgCdMoR1RtgpxmeTBUa76f4BINvy8l3ITc/qIK4AAP7zUgu9T4P+tiXRSm+hFXA63ca5iTenUFP69xxOR/e25IFb/5d/Dfx77OrhxTjnP8ECKa5KK9N/t8C0SClI8E+IcZOPCi5fEwXJ2oK14PrON4nR7ZmphxyKUo5uPzRbuNdvzg7+ibuGRObjWpDJ2nG/xqwIlXkziEYYzW684QztQ/PtAasRFI75Dl8bJPk2j+v2uUVnPkzrgc4gu/oAAAA=)"></div><div class="bd" id="B_kitchen" style="background-image:url(data:image/webp;base64,UklGRuQAAABXRUJQVlA4INgAAADwBQCdASogABIAPp1EnEolo6KhqAqosBOJYgCsMuN/UdFIeQPJukue5F8pT8BFi9ItGJjGsddXmAD+3YJDwoKgw5SGEpAijHbUhY+YOfU63Z/C+e4SavYfDGKQRPChzxMS4tdY0fHSNXPX4hD567zRNFUzmRU+Ovo8D2fBYMMra0doZwU0PgMk/A2lioKMkE2o2tq/KSCMhnsBMsjAAOoAh4IVNcrGZxoXi/1oo2Em4+MfayjAIfa5nNjkwIakO9eEc2K8yBuwjAjnzPi31WT5EAskU1zwAAA=)"></div><div class="bd" id="B_bedroom" style="background-image:url(data:image/webp;base64,UklGRvAAAABXRUJQVlA4IOQAAAAwBgCdASogABIAPpU6lkgloyIhMAwAsBKJYgCdMoSCyLD1kCINDgp8vkY+uMgpZH7tn/HkVHDRWUBUAP7kLMDcDuKPZ0kXCt3oGzilskZ4gyRx7rspkQLjKUXFXuukOa52n0/mFMWoLWvkMoQsJmTCg1pPC0BI2UfmouhHdeSpxvje4ol/xfmXlPWUIirwEsv2bcK+5gBGj1sWCzw+O0B4VKVPfJYswkX8EExc5GWMVwinNMdNbXpz5/4vSJDMBkD23Clk/96keIfDJaLetkJ9gcMUzq4yNCHjN9lFyJaZfwOXAAA=)"></div><div class="bd" id="B_bath" style="background-image:url(data:image/webp;base64,UklGRvAAAABXRUJQVlA4IOQAAABwBQCdASogABIAPp1AmUglo6KhMAgAsBOJQBBOAPpwoJwvBkSb63bRI2MN5V6lQmFnaTSAAP7zAg1uxVO+QiI3/6ysqUJXkOG880kHON5uyZFyzFD2g5o688PIeBSazx+T62MoZ+vnMP/JCRzaeX3L/wpzBU/NK8GtuvAjSrGcguH5VXgqFBD5qxYd/A7cNTXPtD6Ym0XSdeTHpEbGs2nRYitjzEmbqz9h3tKTxCNCsIB62ady8IPPz2CuAmiCewsZSscieb/imH/XiLeClU/mhNcGWO3dSbUVbIRRSQ2NvefwAAA=)"></div></div>
+ <div class="layer" id="L_hero">
+  <div style="position:absolute;left:-1536px;right:-1536px;bottom:100%;height:1400px;background:linear-gradient(#070a1a,#204599)"></div><div style="position:absolute;left:-1536px;right:-1536px;top:100%;height:1400px;background:linear-gradient(#3b2c29,#050506)"></div><div style="position:absolute;right:100%;top:0;bottom:0;width:1536px;background:linear-gradient(to left,rgba(0,0,0,0),#060608 60%)"></div><div style="position:absolute;left:100%;top:0;bottom:0;width:1536px;background:linear-gradient(to right,rgba(0,0,0,0),#060608 60%)"></div><img src="img/hero.webp" alt="LUMEN Residence facade at dusk" style="z-index:1">
+  <svg id="floorSvg" viewBox="0 0 1536 864" style="position:absolute;inset:0;width:100%;height:100%;z-index:2"></svg>
+  <div id="ftags" style="position:absolute;inset:0;z-index:3"></div>
+ </div>
+ <!-- PLAN -->
+ <div class="layer" id="L_plan">
+  <img src="img/plan.webp" alt="3D floor plan">
+  <div id="apts"></div>
+ </div>
+ <div class="layer" id="L_facade"><img src="img/facade.webp" alt="Apartment windows"></div>
+ <div class="layer" id="L_living"><img src="img/living.webp" alt="Living room"></div>
+ <div class="layer" id="L_kitchen"><img src="img/kitchen.webp" alt="Kitchen"></div>
+ <div class="layer" id="L_bedroom"><img src="img/bedroom.webp" alt="Bedroom"></div>
+ <div class="layer" id="L_bath"><img src="img/bath.webp" alt="Bathroom"></div>
+ <div id="facShade" style="position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(70% 60% at 50% 50%,rgba(5,6,9,.72),rgba(5,6,9,.38))"></div>
+ <div id="endShade"></div>
+ <div id="vignette"></div>
+</div>
+
+<div id="bar"></div>
+<div id="mtip" class="glass"></div>
+<header><div class="logo">LUMEN<small>Residence</small></div><button class="hbtn" id="hdrCta"><span class="l">Book a viewing</span><span class="s">Book</span></button></header>
+<nav id="steps"></nav>
+
+<section class="ui" id="uHero">
+ <div class="eyebrow">Warsaw · Mokotów · completion Q4 2027</div>
+ <h1 class="serif">LUMEN<br>Residence</h1>
+ <p>Scroll down and the camera will take you from the facade to your apartment and through every room.</p>
+</section>
+<div id="scrollHint">Scroll<i></i></div>
+
+<section class="ui glass" id="uFloor">
+ <div class="eyebrow">Step 1 · Floor</div>
+ <h2 class="serif" id="fTitle">Floor 5</h2>
+ <div class="sub" id="fSub"></div>
+ <div class="fgrid" id="fgrid"></div>
+ <div class="note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>Pick a floor on the facade or here, then keep scrolling</div>
+</section>
+
+<section class="ui glass" id="uPlan">
+ <div class="eyebrow" id="pEyebrow">Step 2 · Apartment</div>
+ <h2 class="serif" id="pTitle"></h2>
+ <div class="legend"><span><i style="background:var(--free)"></i>Available</span><span><i style="background:var(--res)"></i>Reserved</span><span><i style="background:var(--sold)"></i>Sold</span></div>
+ <div class="alist" id="alist"></div>
+ <div class="sel-box" id="selBox"></div>
+</section>
+
+<section class="ui" id="uFacade">
+ <div class="eyebrow" id="faEyebrow"></div>
+ <h3 class="serif" id="faTitle"></h3>
+ <p>Keep scrolling — we’re going inside</p>
+</section>
+
+<section class="ui glass cap" id="uLiving"></section>
+<section class="ui glass cap" id="uKitchen"></section>
+<section class="ui glass cap" id="uBedroom"></section>
+<section class="ui glass cap" id="uBath"></section>
+
+<section class="ui glass" id="uEnd">
+ <div class="eyebrow" id="eEyebrow"></div>
+ <h2 class="serif" id="eTitle"></h2>
+ <div class="specs" id="eSpecs"></div>
+ <button class="cta" id="endCta">Book a viewing</button>
+ <div class="row2"><button class="ghost" id="againBtn">↑ Choose another apartment</button><button class="ghost" id="replayBtn">↺ Replay the tour</button></div>
+</section>
+
+<div id="modal"><div class="box glass">
+ <button class="x" id="mClose">×</button>
+ <div class="eyebrow" id="mEyebrow"></div>
+ <h3 class="serif" id="mTitle">Book a viewing</h3>
+ <p id="mText">Our sales manager will call you within 15 minutes to arrange a convenient time.</p>
+ <form id="mForm"><input placeholder="Name" required><input placeholder="Phone" type="tel" required><button class="cta" type="submit">Send request</button></form>
+</div></div>
+
+<div id="track"></div>
+
+<script>
+/* ============ utils ============ */
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const fmt=n=>n.toLocaleString('pl-PL').replace(/ /g,' ')+' zł';
+const STATUS={free:'Available',res:'Reserved',sold:'Sold'};
+
+/* ============ data ============ */
+// floor bands on the facade render (image px)
+const FLOORY={2:[547,627],3:[467,547],4:[387,467],5:[303,387],6:[223,303],7:[143,223],8:[73,140]};
+const FX0=483,FX1=1043;
+const TYPES=[
+ {n:1,area:58.4,rect:[52,110,712,242],rooms:[['Living & kitchen',29.8],['Bedroom',13.9],['Bathroom',5.6],['Balcony',5.2],['Hallway',3.9]]},
+ {n:2,area:61.2,rect:[774,110,706,246],rooms:[['Living & kitchen',31.6],['Bedroom',14.2],['Bathroom',5.9],['Balcony',5.4],['Hallway',4.1]]},
+ {n:3,area:63.7,rect:[38,458,706,262],rooms:[['Living & kitchen',32.4],['Bedroom',14.6],['Bathroom',6.2],['Balcony',5.8],['Hallway',4.7]]},
+ {n:4,area:66.1,rect:[774,458,708,262],rooms:[['Living & kitchen',33.9],['Bedroom',15.1],['Bathroom',6.4],['Balcony',5.9],['Hallway',4.8]]},
+];
+const FLOORS={};
+for(let f=2;f<=7;f++){const r=mulberry32(f*977+3);
+ FLOORS[f]=TYPES.map(t=>{const x=r();const status=x<.52?'free':x<.7?'res':'sold';const ppm=16900+f*520+Math.round(r()*800);
+  return{...t,id:`${f}.0${t.n}`,floor:f,status,price:Math.round(t.area*ppm/1000)*1000}});
+ if(!FLOORS[f].some(a=>a.status==='free'))FLOORS[f][1].status='free';}
+const freeOf=f=>FLOORS[f]?FLOORS[f].filter(a=>a.status==='free'):[];
+const sel={floor:5,apt:null};
+sel.apt=freeOf(5)[0];
+
+/* ============ timeline (u = screens scrolled) ============ */
+const FULL=[0,0,1536,864];
+const band=(mode)=>{const y0=S.y0,y1=S.y1,h=y1-y0;return mode==='mid'?[FX0-70,y0-150,FX1-FX0+140,h+300]:[600,y0-24,360,h+48]};
+const AR=()=>S.ar||sel.apt.rect;
+const aptZoom=()=>{const[x,y,w,h]=AR();return[x+w*.3,y+h*.3,w*.4,h*.4]};
+const aptView=()=>{const[x,y,w,h]=AR();return[x-30,y-40,w+60,h+80]};
+const PADP=()=>W>900?{r:420,t:70,b:20,l:10}:W>H?{r:345,t:56,b:10,l:10}:{t:66,b:H*.52+14,l:6,r:6};
+const LAYERS={
+ hero:{cam:[[0,[392,26,752,800],'fit'],[.2,[392,26,752,800],'fit'],[1.05,()=>band('mid'),'fit'],[1.5,()=>band('mid'),'fit'],[1.95,()=>band('tight'),'fit'],[10.75,()=>band('mid'),'fit'],[11.7,[300,0,936,864],'fit']],
+  op:[[0,1],[1.55,1],[1.95,0],[10.75,0],[11.1,1]],blurOut:[1.55,1.95]},
+ plan:{cam:[[1.55,[-300,-170,2136,1204],'fit',PADP],[2.05,[24,92,1488,656],'fit',PADP],[3.0,[24,92,1488,656],'fit',PADP],[3.6,aptZoom,'fit']],op:[[1.55,0],[1.95,1],[3.3,1],[3.6,0]]},
+ facade:{cam:[[3.3,[330,70,876,520]],[3.8,FULL],[4.3,FULL],[4.8,[540,90,470,300]],[5.05,[640,150,270,180]]],op:[[3.3,0],[3.6,1],[4.75,1],[5.0,0]],blurOut:[4.75,5.0]},
+ living:{cam:[[4.75,[420,140,700,420]],[5.2,FULL],[6.15,[70,40,1400,790]],[6.6,[1040,200,496,320]]],op:[[4.75,0],[4.98,1],[6.4,1],[6.65,0]],blurOut:[6.4,6.65]},
+ kitchen:{cam:[[6.4,[380,150,780,470]],[6.85,FULL],[7.75,[50,30,1440,810]],[8.2,[0,110,800,480]]],op:[[6.4,0],[6.65,1],[7.95,1],[8.2,0]],blurOut:[7.95,8.2]},
+ bedroom:{cam:[[7.95,[700,180,800,480]],[8.4,FULL],[9.3,[80,40,1400,790]],[9.75,[330,80,560,340]]],op:[[7.95,0],[8.2,1],[9.5,1],[9.75,0]],blurOut:[9.5,9.75]},
+ bath:{cam:[[9.5,[380,80,800,480]],[9.95,FULL],[10.75,[60,40,1420,800]],[11.2,FULL]],op:[[9.5,0],[9.75,1],[10.8,1],[11.1,0]],blurOut:[10.8,11.1]},
+};
+const PW=()=>Math.min(1536,864*W/H);
+const SL=cx=>{const w=PW();return[clamp(cx-w/2,0,1536-w),0,w,864]};
+const PADH=()=>({t:H*.33,b:H*.05,l:8,r:8});
+const PADF=()=>({t:64,b:H*.30,l:8,r:8});
+const bandM=m=>{const y0=S.y0,y1=S.y1,h=y1-y0;return m==='mid'?[FX0-30,y0-150,FX1-FX0+60,h+300]:[600,y0-30,360,h+60]};
+const PADI=()=>({t:58,b:H*.25,l:0,r:0});
+const PADC=()=>({t:58,b:40,l:0,r:0});
+const SLI=cx=>[clamp(cx-310,0,916),0,620,864];
+const rot=r=>[-(r[1]+r[3]),r[0],r[3],r[2]];
+const PADPM=()=>({t:62,b:($('#uPlan').offsetHeight||260)+22,l:10,r:10});
+const LAYERS_M={
+ hero:{cam:[[0,[408,30,720,760],'fit',PADH],[.2,[408,30,720,760],'fit',PADH],[1.05,()=>bandM('mid'),'fit',PADF],[1.5,()=>bandM('mid'),'fit',PADF],[1.95,()=>bandM('tight'),'fit',PADF],[10.75,()=>bandM('mid'),'fit',PADF],[11.7,[408,30,720,760],'fit',()=>({t:70,b:40,l:8,r:8})]]},
+ plan:{rot:true,cam:[[1.55,()=>rot([-200,-100,1936,1064]),'fit',PADPM],[2.05,()=>rot([24,92,1488,656]),'fit',PADPM],[3.0,()=>rot([24,92,1488,656]),'fit',PADPM],[3.6,()=>rot(aptZoom()),'cover']]},
+ facade:{cam:[[3.3,[300,0,936,864],'fit',PADC],[3.8,[418,20,700,820],'fit',PADC],[4.3,[418,20,700,820],'fit',PADC],[4.8,[560,90,420,300],'fit',PADC],[5.05,[690,160,170,150],'fit',PADC]]},
+ living:{cam:[[4.75,[480,160,560,520],'fit',PADI],[5.2,()=>SLI(320),'fit',PADI],[6.15,()=>SLI(1210),'fit',PADI],[6.6,[1090,200,420,420],'fit',PADI]]},
+ kitchen:{cam:[[6.4,[460,180,560,520],'fit',PADI],[6.85,()=>SLI(310),'fit',PADI],[7.75,()=>SLI(1180),'fit',PADI],[8.2,[1060,160,440,460],'fit',PADI]]},
+ bedroom:{cam:[[7.95,[300,140,600,560],'fit',PADI],[8.4,()=>SLI(420),'fit',PADI],[9.3,()=>SLI(1200),'fit',PADI],[9.75,[1060,200,400,420],'fit',PADI]]},
+ bath:{cam:[[9.5,[360,140,600,560],'fit',PADI],[9.95,()=>SLI(330),'fit',PADI],[10.75,()=>SLI(1220),'fit',PADI],[11.2,()=>SLI(768),'fit',PADI]]},
+};
+const U_END=11.7;
+const UI={uHero:[0,.6],uFloor:[.8,1.7],uPlan:[2.0,3.15],uFacade:[3.7,4.45],uLiving:[5.15,6.35],uKitchen:[6.85,7.95],uBedroom:[8.4,9.5],uBath:[9.95,10.8],uEnd:[11.15,99]};
+const STEPS=[['Building',0],['Floor',1.25],['Apartment',2.55],['Living room',5.65],['Kitchen',7.35],['Bedroom',8.9],['Bathroom',10.35],['Summary',U_END]];
+
+/* ============ camera math ============ */
+let W=innerWidth,H=innerHeight,SU=innerHeight,lastW=innerWidth;
+const TOUCH=matchMedia('(hover:none)').matches;
+const PORT=()=>W<H;
+const S={y0:FLOORY[5][0],y1:FLOORY[5][1],ar:null};
+function resolve(r){return typeof r==='function'?r():r}
+function camOf(key){const r=resolve(key[1]),mode=key[2]||'cover',pd=key[3]?key[3]():null;
+ const l=pd?.l||0,rt=pd?.r||0,t=pd?.t||0,b=pd?.b||0,Wa=W-l-rt,Ha=H-t-b;
+ let k=mode==='cover'?Math.max(Wa/r[2],Ha/r[3]):Math.min(Wa/r[2],Ha/r[3]);
+ if(W>=H&&!pd)k=Math.max(k,Math.max(W/1536,H/864));
+ if(W<H&&mode==='fit'&&!pd)k=Math.max(k,H/864*.9);
+ return{cx:r[0]+r[2]/2,cy:r[1]+r[3]/2,k,ox:l+Wa/2-W/2,oy:t+Ha/2-H/2}}
+function camAt(keys,u){
+ if(u<=keys[0][0])return camOf(keys[0]);const last=keys[keys.length-1];if(u>=last[0])return camOf(last);
+ let i=0;while(u>keys[i+1][0])i++;const a=camOf(keys[i]),b=camOf(keys[i+1]);const t=ease((u-keys[i][0])/(keys[i+1][0]-keys[i][0]));
+ return{cx:lerp(a.cx,b.cx,t),cy:lerp(a.cy,b.cy,t),k:Math.exp(lerp(Math.log(a.k),Math.log(b.k),t)),ox:lerp(a.ox,b.ox,t),oy:lerp(a.oy,b.oy,t)}}
+function opAt(keys,u){if(u<=keys[0][0])return keys[0][1];if(u>=keys[keys.length-1][0])return keys[keys.length-1][1];
+ let i=0;while(u>keys[i+1][0])i++;const t=(u-keys[i][0])/(keys[i+1][0]-keys[i][0]);return lerp(keys[i][1],keys[i+1][1],t)}
+function rangeOp(u,[a,b],f=.18){if(u<a||u>b)return 0;return Math.min(1,a<=0?1:(u-a)/f,(b-u)/f)}
+
+/* ============ build hero floors ============ */
+function buildFloors(){
+ let s='';for(let f=2;f<=8;f++){const[y0,y1]=FLOORY[f];s+=`<rect class="fl${f===8?' dis':''}" data-f="${f}" x="${FX0-8}" y="${y0}" width="${FX1-FX0+16}" height="${y1-y0}" rx="2"/>`}
+ $('#floorSvg').innerHTML=s;
+ $('#floorSvg').querySelectorAll('.fl').forEach(r=>{const f=+r.dataset.f;
+  r.addEventListener('click',()=>{if(f===8)return;pickFloor(f);if(U<.9)goTo(1.25)});
+  r.addEventListener('mouseenter',()=>showTag(f));r.addEventListener('mouseleave',()=>showTag(null))});
+ let t='';for(let f=2;f<=8;f++){const[y0,y1]=FLOORY[f];const fr=freeOf(f).length;t+=`<div class="ftag" data-f="${f}" style="top:${(y0+y1)/2}px;opacity:0"><i></i><b>${f===8?'Penthouse':'Floor '+f}</b><span>${f===8?'sold out':fr+' of 4 available'}</span></div>`}
+ $('#ftags').innerHTML=t;
+ let g='';for(let f=2;f<=8;f++)g+=`<button data-f="${f}" ${f===8?'disabled title="Sold out"':''}>${f===8?'P':f}${f<8&&freeOf(f).length?`<em>${freeOf(f).length}</em>`:''}</button>`;
+ $('#fgrid').innerHTML=g;$('#fgrid').querySelectorAll('button').forEach(b=>b.onclick=()=>pickFloor(+b.dataset.f));
+}
+let hoverF=null;
+function showTag(f){hoverF=f}
+function pickFloor(f){if(!FLOORS[f])return;sel.floor=f;if(!sel.apt||sel.apt.floor!==f||sel.apt.status==='sold')sel.apt=freeOf(f)[0]||FLOORS[f].find(a=>a.status==='res');refresh()}
+
+/* ============ build plan ============ */
+function buildPlan(){
+ const f=sel.floor;
+ $('#apts').innerHTML=FLOORS[f].map(a=>{const[x,y,w,h]=a.rect;return`<div class="apt ${a.status}${sel.apt&&sel.apt.id===a.id?' sel':''}${sel.apt&&sel.apt.id!==a.id?' dim':''}" data-id="${a.id}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"><div class="lab"><b>${a.id}</b><span>2 rooms · ${a.area} m²</span><br><em class="st-${a.status}">${STATUS[a.status]}</em></div></div>`}).join('');
+ $('#apts').querySelectorAll('.apt').forEach(el=>el.onclick=()=>pickApt(el.dataset.id));
+ $('#pTitle').textContent=`Floor ${f}: ${freeOf(f).length} available`;
+ $('#alist').innerHTML=FLOORS[f].map(a=>`<button class="arow${sel.apt&&sel.apt.id===a.id?' on':''}" data-id="${a.id}" ${a.status==='sold'?'disabled':''}><b>${a.id}</b><span class="m">2 rooms · ${a.area} m²</span><span class="pr">${a.status==='sold'?'—':fmt(a.price)}<small class="st-${a.status}">${STATUS[a.status]}</small></span></button>`).join('');
+ $('#alist').querySelectorAll('.arow').forEach(b=>b.onclick=()=>pickApt(b.dataset.id));
+ const a=sel.apt;
+ $('#selBox').innerHTML=a?`<div class="row"><span class="eyebrow">Selected · No. ${a.id}</span><span class="st-${a.status}" style="font-size:12px;font-weight:700">${STATUS[a.status]}</span></div><div class="price">${fmt(a.price)}</div><div class="m">${fmt(Math.round(a.price/a.area))} / m² · ${a.area} m² · balcony ${a.rooms[3][1]} m²</div><button class="cta" id="enterBtn">Step inside ↓<span class="mp">· ${fmt(a.price)}</span></button>`:'';
+ const eb=$('#enterBtn');if(eb)eb.onclick=()=>goTo(5.6);
+}
+function pickApt(id){const a=FLOORS[sel.floor].find(x=>x.id===id);if(!a||a.status==='sold')return;sel.apt=a;refresh()}
+
+/* ============ captions ============ */
+const ROOMCAP={
+ uLiving:{n:'01',name:'Living & kitchen',i:0,text:'West-facing panoramic glazing: watch the sun set over central Warsaw from your sofa. Open-plan layout with a kitchen island.',hots:[[770,320,'Floor-to-ceiling windows','2.9 m high, triple glazing, concealed roller blinds.'],[722,190,'2.9 m ceilings','Room for pendant lights and hidden curtain tracks.'],[650,780,'Engineered oak flooring','Included in the turnkey package. Underfloor heating throughout.',],[1380,470,'Travertine island','Breakfast bar for 3, hob connections in place.']]},
+ uKitchen:{n:'02',name:'Kitchen & dining',i:0,text:'Oak and fluted-glass fronts, a 2.8 m island and integrated appliances. A corner window beside the dining table.',hots:[[890,270,'Fluted glass','Lit wall cabinets, fronts in a choice of 3 palettes.'],[540,380,'Integrated appliances','Oven, microwave, dishwasher and fridge.'],[1030,470,'2.8 m island','Travertine worktop with an undermount sink.'],[140,300,'Corner window','Views of the Palace of Culture and the city centre.']]},
+ uBedroom:{n:'03',name:'Bedroom',i:1,text:'The quiet side of the building, overlooking a green courtyard. A full-wall wardrobe and upholstered panels behind the bed.',hots:[[110,360,'Full-wall wardrobe','3.4 m of built-in storage with interior lighting.'],[560,290,'Quiet courtyard','Courtyard-facing windows, Rw 38 dB sound insulation.'],[1180,420,'Upholstered panels','Acoustic wall panels behind the headboard.']]},
+ uBath:{n:'04',name:'Bathroom',i:2,text:'Large-format stone, a freestanding bath and a walk-in shower. Underfloor heating and soft indirect lighting.',hots:[[300,600,'Freestanding bath','Solid-surface bath with a floor-mounted mixer.'],[700,250,'Walk-in shower','Frameless glass and a linear floor drain.'],[1340,210,'Backlit mirror','Warm 2700 K light with smooth dimming.']]},
+};
+function buildCaps(){
+ const a=sel.apt;if(!a)return;
+ Object.entries(ROOMCAP).forEach(([id,c])=>{
+  $('#'+id).innerHTML=`<div class="idx"><span class="eyebrow">${c.n} / 04</span><i></i><span class="eyebrow" style="color:var(--mut)">Apt. ${a.id}</span></div><h3 class="serif">${c.name}</h3><div class="spec">${a.rooms[c.i][1]} m² <span>· floor ${a.floor}</span><span>· ${a.area} m² total</span></div><p>${c.text}</p>`;
+ });
+ $('#faEyebrow').textContent=`Apartment No. ${a.id} · floor ${a.floor}`;$('#faTitle').textContent='Your windows face west';
+ $('#eEyebrow').textContent=`Summary · ${STATUS[a.status]}`;$('#eTitle').innerHTML=`Apartment<br>No. ${a.id}`;
+ $('#eSpecs').innerHTML=`<div><b>2</b><span>rooms</span></div><div><b>${a.area}</b><span>m²</span></div><div><b>${a.floor}</b><span>floor</span></div><div><b>${Math.round(a.price/1000)}k</b><span>zł</span></div>`;
+}
+function buildHots(){
+ const map={uLiving:'L_living',uKitchen:'L_kitchen',uBedroom:'L_bedroom',uBath:'L_bath'};
+ Object.entries(map).forEach(([cid,lid])=>{const L=$('#'+lid);L.querySelectorAll('.hot').forEach(h=>h.remove());
+  ROOMCAP[cid].hots.forEach(([x,y,t,d])=>{const h=document.createElement('div');h.className='hot'+(x>1050?' left':'');h.style.left=x+'px';h.style.top=y+'px';
+   h.innerHTML=`<div class="dot">+</div><div class="tip"><b>${t}</b>${d}</div>`;h.querySelector('.dot').onclick=e=>{e.stopPropagation();if(W<=900){showMtip(t,d);return}const o=h.classList.contains('open');L.querySelectorAll('.hot').forEach(x=>x.classList.remove('open'));if(!o)h.classList.add('open')};L.appendChild(h)})});
+}
+let mtT,mtU=0;
+function showMtip(t,d){const m=$('#mtip');m.innerHTML=`<b>${t}</b>${d}`;m.classList.add('on');mtU=U;clearTimeout(mtT);mtT=setTimeout(()=>m.classList.remove('on'),4500)}
+function refresh(){
+ $('#fTitle').textContent=`Floor ${sel.floor}`;
+ const fr=freeOf(sel.floor);$('#fSub').textContent=`${fr.length} of 4 available · from ${fr.length?fmt(Math.min(...fr.map(a=>a.price))):'—'}`;
+ $('#fgrid').querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.f===sel.floor));
+ $('#floorSvg').querySelectorAll('.fl').forEach(r=>r.classList.toggle('sel',+r.dataset.f===sel.floor));
+ buildPlan();buildCaps();
+}
+
+/* ============ steps ============ */
+function buildSteps(){$('#steps').innerHTML=STEPS.map(([n,u],i)=>`<button data-u="${u}"><span>${n}</span><i></i></button>`).join('');$('#steps').querySelectorAll('button').forEach(b=>b.onclick=()=>goTo(+b.dataset.u))}
+
+/* ============ scroll engine ============ */
+const track=$('#track');
+function setTrack(){track.style.height=(U_END*SU+innerHeight)+'px'}
+let U=0,TU=0;
+addEventListener('scroll',()=>{TU=scrollY/SU},{passive:true});
+addEventListener('resize',()=>{W=innerWidth;H=innerHeight;if(!TOUCH||Math.abs(innerWidth-lastW)>40){const u=TU;lastW=innerWidth;SU=innerHeight;setTrack();scrollTo(0,u*SU);TU=u}});
+let goAnim=null;
+function goTo(u){const from=scrollY,to=u*SU,d=Math.abs(to-from),ms=clamp(d/SU*260,600,2600),t0=performance.now();
+ cancelAnimationFrame(goAnim);const step=n=>{const t=Math.min(1,(n-t0)/ms);scrollTo(0,from+(to-from)*ease(t));if(t<1)goAnim=requestAnimationFrame(step)};goAnim=requestAnimationFrame(step)}
+['wheel','touchstart','keydown'].forEach(e=>addEventListener(e,()=>cancelAnimationFrame(goAnim),{passive:true}));
+
+const LEL={};Object.keys(LAYERS).forEach(k=>LEL[k]=$('#L_'+k));
+const UIEL={};Object.keys(UI).forEach(k=>UIEL[k]=$('#'+k));
+function frame(){
+ U+= (TU-U)*(TOUCH?.16:.085); if(Math.abs(TU-U)<.0004)U=TU;
+ // floor band smoothing
+ const ta=sel.apt.rect;if(!S.ar)S.ar=ta.slice();for(let i=0;i<4;i++)S.ar[i]+=(ta[i]-S.ar[i])*.09;
+ const fb=FLOORY[hoverF&&U<1.2&&hoverF<8?hoverF:sel.floor];S.y0+=(fb[0]-S.y0)*.08;S.y1+=(fb[1]-S.y1)*.08;
+ const MB=PORT();
+ for(const k in LAYERS){const L=LAYERS[k],el=LEL[k];let op=opAt(L.op,U);
+  if(op<=.001){if(el.style.opacity!=='0'){el.style.opacity=0;el.classList.remove('live')}continue}
+  const c=camAt(MB?LAYERS_M[k].cam:L.cam,U);
+  const ro=MB&&LAYERS_M[k].rot;el.classList.toggle('rot',!!ro);
+  el.style.transform=`translate3d(${W/2+c.ox-c.cx*c.k}px,${H/2+c.oy-c.cy*c.k}px,0) scale(${c.k})`+(ro?' rotate(90deg)':'');
+  el.style.opacity=op;el.style.setProperty('--inv',(1/c.k).toFixed(4));
+  let bl=0;if(L.blurOut&&U>L.blurOut[0]&&U<L.blurOut[1])bl=(U-L.blurOut[0])/(L.blurOut[1]-L.blurOut[0])*10;
+  el.style.filter=bl>.2&&!TOUCH?`blur(${bl.toFixed(1)}px)`:'none';
+  el.classList.toggle('live',op>.6);
+ }
+ // floor tags
+ document.querySelectorAll('.ftag').forEach(t=>{const f=+t.dataset.f;const on=W>900&&!MB&&((f===sel.floor&&U>.3&&U<.62)||(f===hoverF&&U<.62));t.style.opacity=on?1:0});
+ $('#floorSvg').classList.toggle('showsel',U>.25);
+ $('#floorSvg').style.opacity=U<1.7?1:0;
+ // UI panels
+ for(const k in UI){const o=rangeOp(U,UI[k]);const el=UIEL[k];el.style.opacity=o;el.classList.toggle('live',o>.5);
+  const base=(k==='uFloor'||k==='uPlan')&&W>900?'translateY(-50%) ':k==='uFacade'||k==='uEnd'?'translate(-50%,-50%) ':'';el.style.transform=base+`translateY(${(1-o)*24}px)`}
+ // hotspots visible only with caption
+ [['uLiving','L_living'],['uKitchen','L_kitchen'],['uBedroom','L_bedroom'],['uBath','L_bath']].forEach(([c,l])=>{const o=rangeOp(U,UI[c]);LEL[l.slice(2)].querySelectorAll('.hot').forEach(h=>{h.style.opacity=o;h.style.pointerEvents=o>.5?'auto':'none';if(o<.3)h.classList.remove('open')})});
+ if(Math.abs(U-mtU)>.25)$('#mtip').classList.remove('on');
+ ['facade','living','kitchen','bedroom','bath'].forEach(k=>{$('#B_'+k).style.opacity=MB?(+LEL[k].style.opacity||0):0});
+ $('#facShade').style.opacity=rangeOp(U,UI.uFacade,.2);
+ $('#endShade').style.opacity=clamp((U-10.9)/.4,0,1);
+ $('#scrollHint').style.opacity=clamp(1-U*4,0,1);
+ $('#bar').style.width=clamp(U/U_END,0,1)*100+'%';
+ // steps
+ let cur=0;STEPS.forEach(([n,u],i)=>{if(U>=u-.45)cur=i});
+ $('#steps').querySelectorAll('button').forEach((b,i)=>{b.classList.toggle('on',i===cur);b.classList.toggle('done',i<cur)});
+ requestAnimationFrame(frame);
+}
+
+/* ============ modal ============ */
+function openModal(){const a=sel.apt;$('#mEyebrow').textContent=a?`Apartment No. ${a.id} · ${a.area} m²`:'LUMEN Residence';$('#mTitle').textContent='Book a viewing';$('#mText').textContent='Our sales manager will call you within 15 minutes to arrange a convenient time.';$('#mForm').style.display='';$('#modal').classList.add('on')}
+$('#hdrCta').onclick=openModal;$('#endCta').onclick=openModal;
+$('#mClose').onclick=()=>$('#modal').classList.remove('on');$('#modal').onclick=e=>{if(e.target.id==='modal')$('#modal').classList.remove('on')};
+$('#mForm').onsubmit=e=>{e.preventDefault();$('#mTitle').textContent='Thank you!';$('#mText').textContent='This is a demo prototype, so the request isn’t sent anywhere. On a live site it would go to the sales team’s CRM or Telegram.';$('#mForm').style.display='none'};
+$('#againBtn').onclick=()=>goTo(2.55);$('#replayBtn').onclick=()=>goTo(0);
+
+/* ============ boot ============ */
+buildFloors();buildSteps();buildHots();refresh();setTrack();
+(async()=>{
+ const imgs=[...document.querySelectorAll('.layer img')];let n=0;
+ await Promise.all(imgs.map(im=>(im.decode?im.decode():Promise.resolve()).catch(()=>{}).then(()=>{n++;$('#lp').style.transform=`scaleX(${n/imgs.length})`})));
+ TU=U=scrollY/SU;requestAnimationFrame(frame);
+ const L=$('#loader');L.style.opacity=0;setTimeout(()=>L.remove(),900);
+})();
+</script>
+</body>
+</html>
